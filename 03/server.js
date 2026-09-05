@@ -16,14 +16,15 @@ fastify.get("/", async () => {
 fastify.register(telegramRoutes);
 
 async function start() {
-    try {
-        await fastify.listen({
-            port: 3000
-        });
-    } catch (error) {
-        fastify.log.error(error);
-        process.exit(1);
-    }
+    const port = process.env.PORT || 3000;
+
+    await fastify.listen({
+        port,
+        host: "0.0.0.0"
+    });
 }
 
-start();
+start().catch((error) => {
+    fastify.log.error(error);
+    process.exit(1);
+});
