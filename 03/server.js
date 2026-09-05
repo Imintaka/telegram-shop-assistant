@@ -1,4 +1,3 @@
-process.loadEnvFile();
 
 const Fastify = require("fastify");
 const telegramRoutes = require("./routes/telegram.routes");
