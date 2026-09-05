@@ -1,0 +1,12 @@
+{
+  "name": "chatbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+  },
+  "private": true,
+  "dependencies": {
+    "fastify": "^5.12.3"
+  }
+}
