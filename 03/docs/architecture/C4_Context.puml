@@ -1,0 +1,23 @@
+@startuml
+
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title System Context Diagram - Telegram Shop Assistant
+
+Person(user, "Пользователь", "Пользователь Telegram, который ищет товары через бота")
+
+System_Ext(telegram, "Telegram", "Мессенджер, через который пользователь взаимодействует с ботом")
+
+System(shopBot, "Telegram Shop Assistant", "Система помогает пользователю искать товары через Telegram")
+
+System_Ext(productsApi, "DummyJSON Products API", "Внешний API с каталогом товаров")
+
+Rel(user, telegram, "Отправляет сообщения и получает ответы")
+
+Rel(telegram, shopBot, "Отправляет обновления через webhook", "HTTPS / JSON")
+
+Rel(shopBot, telegram, "Отправляет сообщения пользователю", "Telegram Bot API / HTTPS")
+
+Rel(shopBot, productsApi, "Ищет товары", "HTTPS / JSON")
+
+@enduml

@@ -1,0 +1,27 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/release/v2.13.0/C4_Container.puml
+
+title C2 - Container Diagram: Telegram Shop Assistant
+
+actor "Пользователь" as user
+
+rectangle "Telegram\n<<External System>>" as telegram
+
+rectangle "Telegram Shop Assistant" {
+
+    rectangle "Backend\n<<Container>>\nNode.js + Fastify" as backend
+
+}
+
+rectangle "DummyJSON Products API\n<<External System>>" as productsApi
+
+
+user --> telegram : Отправляет сообщения\nи получает ответы
+
+telegram --> backend : Webhook\nHTTPS / JSON
+
+backend --> telegram : Telegram Bot API\nHTTPS / JSON
+
+backend --> productsApi : Запрашивает товары\nHTTPS / JSON
+
+@enduml

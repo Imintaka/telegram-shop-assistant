@@ -3,7 +3,7 @@ process.loadEnvFile();
 const token = process.env.BOT_TOKEN;
 
 const webhookUrl =
-    "https://adidas-assistant.vercel.app/telegram/webhook";
+    "https://telegram-shop-assistant.vercel.app/telegram/webhook";
 
 async function setWebhook() {
     const response = await fetch(
