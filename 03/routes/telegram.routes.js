@@ -27,6 +27,17 @@ async function telegramRoutes(fastify) {
                     `Message: ${text}`
                 );
 
+                if (text === "/start") {
+                    await telegram.sendMessage(
+                        chatId,
+                        "Привет! 👋 Я помогу тебе найти товар.\n\nНапиши название товара, например: shoes, phone или laptop."
+                    );
+
+                    return {
+                        ok: true
+                    };
+                }
+
                 const answer = await findProducts(text);
 
                 await telegram.sendMessage(
