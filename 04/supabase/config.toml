@@ -1,0 +1,6 @@
+project_id = "telegram-shop"
+
+[functions.telegram-webhook]
+# Telegram не присылает JWT Supabase — проверку JWT отключаем,
+# вместо неё функция проверяет заголовок x-telegram-bot-api-secret-token
+verify_jwt = false

@@ -1,0 +1,11 @@
+{
+  "name": "chatbot-supabase",
+  "version": "1.0.0",
+  "description": "Этап 04: бот на Supabase Edge Functions + Postgres",
+  "private": true,
+  "scripts": {
+    "seed": "node scripts/seed-products.js",
+    "set-webhook": "node scripts/set-webhook-supabase.js"
+  },
+  "dependencies": {}
+}

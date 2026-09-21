@@ -9,6 +9,8 @@
 /dataSources/
 /dataSources.local.xml
 03/.env
+04/.env
+04/supabase/.temp/
 .idea
 node_modules
 NOTES.md
