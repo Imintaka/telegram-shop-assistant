@@ -1,6 +1,8 @@
 // Telegram-бот «магазинный ассистент» как Supabase Edge Function.
 // Аналог этапа 03, но: товары из Postgres (Supabase), проверка секретного
 // токена вебхука, ответ 200 вместо 500 при ошибках (без ретраев Telegram).
+// Плюс журнал: каждая реплика пишется в messages, уникальные пользователи
+// ведутся карточками в clients (даты последнего контакта в обе стороны).
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -33,6 +35,50 @@ async function sendMessage(chatId, text) {
     }
 
     return response.json();
+}
+
+// «Тетрадка»: запись одной реплики диалога. text передаётся отдельно —
+// для 'out' это текст ответа бота, а не echo сообщения клиента.
+// Ошибка журнала не должна ломать ответы покупателю — только console.error.
+async function logMessage(message, text, direction) {
+    try {
+        const { error } = await supabase.from("messages").insert({
+            user_id: message.from.id,
+            username: message.from.username ?? null,
+            chat_id: message.chat.id,
+            text: text,
+            direction: direction,
+        });
+
+        if (error) {
+            throw new Error(error.message);
+        }
+    } catch (error) {
+        console.error("logMessage error:", error);
+    }
+}
+
+// «Картотека»: upsert — карточка создаётся при первом сообщении и обновляется
+// при каждом следующем (актуальные ник/имя + одна из дат контакта).
+async function touchClient(message, kind) {
+    const now = new Date().toISOString();
+
+    try {
+        const { error } = await supabase.from("clients").upsert({
+            user_id: message.from.id,
+            username: message.from.username ?? null,
+            first_name: message.from.first_name ?? null,
+            ...(kind === "in"
+                ? { last_client_message_at: now }
+                : { last_bot_reply_at: now }),
+        });
+
+        if (error) {
+            throw new Error(error.message);
+        }
+    } catch (error) {
+        console.error("touchClient error:", error);
+    }
 }
 
 // В PostgREST-фильтре or(...) запятая, скобки и двоеточие — разделители синтаксиса,
@@ -93,12 +139,17 @@ Deno.serve(async (req) => {
 
         console.log("Message:", text);
 
+        // журнал + карточка: входящее фиксируем до обработки
+        await logMessage(message, text, "in");
+        await touchClient(message, "in");
+
         // startsWith, чтобы работал deep-link запуск /start <payload>
         if (text.startsWith("/start")) {
-            await sendMessage(
-                chatId,
-                "Привет! 👋 Я помогу тебе найти товар.\n\nНапиши название товара, например: shoes, phone или laptop."
-            );
+            const greeting = "Привет! 👋 Я помогу тебе найти товар.\n\nНапиши название товара, например: shoes, phone или laptop.";
+
+            await sendMessage(chatId, greeting);
+            await logMessage(message, greeting, "out");
+            await touchClient(message, "out");
 
             return Response.json({ ok: true });
         }
@@ -106,6 +157,10 @@ Deno.serve(async (req) => {
         const answer = await findProducts(text);
 
         await sendMessage(chatId, answer);
+        // 'out' фиксируем после успешной отправки: если Telegram не примет ответ,
+        // даты в карточке разойдутся — и это будет видно как сигнал проблемы
+        await logMessage(message, answer, "out");
+        await touchClient(message, "out");
 
         return Response.json({ ok: true });
 

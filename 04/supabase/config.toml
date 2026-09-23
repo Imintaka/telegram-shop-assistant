@@ -4,3 +4,12 @@ project_id = "telegram-shop"
 # Telegram не присылает JWT Supabase — проверку JWT отключаем,
 # вместо неё функция проверяет заголовок x-telegram-bot-api-secret-token
 verify_jwt = false
+
+# Админ-функции для проверки состояния (клиенты и журнал). Вызывает человек
+# с секретным заголовком, не Supabase-клиент с JWT — поэтому JWT тоже отключён;
+# функцию защищает тот же x-telegram-bot-api-secret-token.
+[functions.list-clients]
+verify_jwt = false
+
+[functions.list-messages]
+verify_jwt = false

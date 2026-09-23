@@ -62,12 +62,47 @@ npm run set-webhook
 - Ошибки отвечают 200, а не 500 — Telegram не ретраит, дублей сообщений нет.
 - `/start` ловится через `startsWith` — deep-link запуск `/start <payload>` работает.
 
+## Журнал и клиенты
+Каждое текстовое сообщение пишется в таблицу `messages`: `'in'` — от человека,
+`'out'` — ответ бота (текст ответа логируется после успешной отправки, так что
+расхождение дат в карточке видно как проблема доставки). Уникальные
+пользователи ведутся карточками в `clients`: upsert при каждом сообщении
+обновляет ник/имя и одну из дат — `last_client_message_at` (клиент написал)
+или `last_bot_reply_at` (бот ответил).
+
+Обе таблицы приватные: RLS включён, политик нет — читать может только владелец
+(дашборд) и бот (service_role, обходит RLS). Ошибка записи журнала не ломает
+бота — ответ покупателю уходит в любом случае. Не-текстовые апдейты (фото,
+стикеры) не логируются — бот их и не обрабатывает.
+
+## Функции для проверки состояния
+Две админ-функции показывают извне, что бот меняет состояние сервера:
+- `GET /functions/v1/list-clients` — все клиенты, недавно активные первыми
+  (сортировка по `last_client_message_at` по убыванию);
+- `GET /functions/v1/list-messages` — весь журнал, самые свежие реплики первыми
+  (сортировка по `created_at` по убыванию).
+
+Доступ закрыт тем же секретом, что и вебхук (переписка приватная) — заголовок
+`x-telegram-bot-api-secret-token` со значением `WEBHOOK_SECRET` из `.env`:
+
+```
+curl -H "x-telegram-bot-api-secret-token: <WEBHOOK_SECRET>" \
+  https://rwsxpfupoouhpnjfuahu.supabase.co/functions/v1/list-messages
+```
+
+Без заголовка — 403. Сценарий проверки: написать боту в Telegram, выполнить
+curl — в ответе появляются новые строки (в `list-messages` они сверху).
+
 ## Структура
 ```
 supabase/
   config.toml                          — настройки CLI (verify_jwt = false)
   functions/telegram-webhook/index.ts  — весь бот (Edge Function, Deno)
-  migrations/001_products.sql          — таблица products + RLS
+  functions/list-clients/index.ts      — админ: клиенты, недавние первыми
+  functions/list-messages/index.ts     — админ: журнал, свежие реплики первыми
+  migrations/001_products.sql          — таблица products + RLS (публичное чтение)
+  migrations/002_messages.sql          — журнал диалогов messages + RLS (приватная)
+  migrations/003_clients.sql           — картотека клиентов clients + RLS (приватная)
 scripts/
   seed-products.js                     — разовая заливка товаров из dummyjson
   set-webhook-supabase.js              — setWebhook на URL функции
